@@ -22,7 +22,6 @@ class VideoPlayerViewController: UIViewController {
     let pauseButton = UIButton()
     let closeButton = UIButton()
     let nextLoopButton = UIButton()
-    let startLoopButton = UIButton()
     var playerRateBeforeSeek: Float = 0
     var componentsHidden = false
     var startOver = false
@@ -31,8 +30,13 @@ class VideoPlayerViewController: UIViewController {
     var loopIndex: Int!
     var loopingOn = false
     var loopBar = UIView()
-    var loopTracker = UIView()
     var loopButtons = [UIButton]()
+    
+    
+    override func viewDidAppear(_ animated: Bool) {
+        loopingOn = true
+        skipToLoop(id: 0)
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -88,55 +92,19 @@ class VideoPlayerViewController: UIViewController {
             nextLoopButton.tintColor = UIColor.white
             nextLoopButton.backgroundColor = UIColor(red: 230/255, green: 230/255, blue: 230/255, alpha: 0.5)
             nextLoopButton.addTarget(self, action: #selector(nextLoop), for: .touchUpInside)
-            nextLoopButton.alpha = 0
+            nextLoopButton.alpha = 1
             view.addSubview(nextLoopButton)
             
-            startLoopButton.setTitle(NSLocalizedString("VideoPlayerViewController.startLoop", comment: "next loop"), for: .normal)
-            startLoopButton.tintColor = UIColor.white
-            startLoopButton.backgroundColor = UIColor(red: 200/255, green: 20/255, blue: 20/255, alpha: 0.5)
-            startLoopButton.addTarget(self, action: #selector(startLooping), for: .touchUpInside)
-            view.addSubview(startLoopButton)
             
-            loopTracker.backgroundColor = UIColor(red: 0/255, green: 0/255, blue: 0/255, alpha: 1)
-            loopTracker.alpha = 0
-            view.addSubview(loopTracker)
         }
         
         setLoops()
         
         
+        
     }
     
-    func startLooping(){
-        if !loopingOn{
-            if !loops.isEmpty{
-                mainLoop = loops[0]
-                loopIndex = 0
-                loopingOn = true
-                seekToPercent(percent: mainLoop.start)
-                if !componentsHidden{
-                    UIView.animate(withDuration: 0.5, animations: {
-                        self.nextLoopButton.alpha = 1
-                        self.seekSlider.alpha = 0
-                        self.loopTracker.alpha = 1
-                    })
-                }
-                addLoopButton()
-                startLoopButton.setTitle(NSLocalizedString("VideoPlayerViewController.stopLoop", comment: "next loop"), for: .normal)
-            }
-        }else{
-            loopingOn = false
-            if !componentsHidden{
-                UIView.animate(withDuration: 0.5, animations: {
-                    self.nextLoopButton.alpha = 0
-                    self.seekSlider.alpha = 1
-                    self.loopTracker.alpha = 1
-                })
-            }
-            removeLoopButtons()
-            startLoopButton.setTitle(NSLocalizedString("VideoPlayerViewController.startLoop", comment: "next loop"), for: .normal)
-        }
-    }
+
     
     func addLoopButton(){
         var i = 0
@@ -146,11 +114,11 @@ class VideoPlayerViewController: UIViewController {
             let width = Double((theWidth * CGFloat(loop.end)) - (theWidth * CGFloat(loop.start)))
             let button = UIButton(frame: CGRect(x: startX, y: Double(nextLoopButton.frame.maxY), width: width, height: Double(seekSlider.frame.maxY - nextLoopButton.frame.maxY)))
             button.backgroundColor = UIColor(red: 200/255, green: 20/255, blue: 20/255, alpha: 0.5)
-            button.addTarget(self, action: #selector(skipToLoop), for: .touchUpInside)
+           
             button.tag = i
             loopButtons.append(button)
             button.alpha = 0
-            view.addSubview(button)
+            view.insertSubview(button, at: 7)
             UIView.animate(withDuration: 0.5, animations: {
                 button.alpha = 1
             })
@@ -158,14 +126,8 @@ class VideoPlayerViewController: UIViewController {
         }
     }
     
-    func updateLoopTracker(elapsedTime: Float64, duration: Float64){
-        let theWidth = view.bounds.size.width
-        let x = theWidth * CGFloat(elapsedTime/duration) - 5
-        loopTracker.frame = CGRect(x: x, y:  nextLoopButton.frame.maxY, width: 2, height: seekSlider.frame.maxY - nextLoopButton.frame.maxY)
-    }
     
-    func skipToLoop(sender: UIView){
-        let id = sender.tag
+    func skipToLoop(id: Int){
         if !loops.isEmpty{
             mainLoop = loops[id]
             loopIndex = id
@@ -190,6 +152,8 @@ class VideoPlayerViewController: UIViewController {
         let loop3 = Loop(start: 0.5, end: 0.52)
         let loop4 = Loop(start: 0.6, end: 0.9)
         loops = [loop1, loop2, loop3, loop4]
+        loopIndex = 0
+        mainLoop = loops[loopIndex]
     }
     
     deinit {
@@ -233,11 +197,13 @@ class VideoPlayerViewController: UIViewController {
         
         nextLoopButton.frame = CGRect(x: theWidth - theWidth/5, y:  0, width: theWidth - (theWidth - theWidth/5), height: seekSlider.frame.minY - 15)
         
-        startLoopButton.frame = CGRect(x: 10, y:  theHeight/2, width: 150, height: 40)
         
         loopBar.frame = CGRect(x: 0, y:  nextLoopButton.frame.maxY, width: theWidth, height: seekSlider.frame.maxY - nextLoopButton.frame.maxY)
         
-        loopTracker.frame = CGRect(x: 0, y:  nextLoopButton.frame.maxY, width: 2, height: seekSlider.frame.maxY - nextLoopButton.frame.maxY)
+        
+        addLoopButton()
+        
+        
         
     }
     
@@ -264,26 +230,26 @@ class VideoPlayerViewController: UIViewController {
                 self.closeButton.alpha = 1
                 self.timeRemainingLabel.alpha = 1
                 self.timePlayedLabel.alpha = 1
-                self.startLoopButton.alpha = 1
+            
                 self.loopBar.alpha = 1
-                if self.loopingOn{
-                    self.nextLoopButton.alpha = 1
-                    self.loopTracker.alpha = 1
-                    for button in self.loopButtons{
-                        UIView.animate(withDuration: 0.5, animations: {
-                            button.alpha = 1
-                        })
-                    }
-                }else{
-                    self.seekSlider.alpha = 1
+            
+                self.nextLoopButton.alpha = 1
+     
+                for button in self.loopButtons{
+                    UIView.animate(withDuration: 0.5, animations: {
+                        button.alpha = 1
+                    })
                 }
+            
+                self.seekSlider.alpha = 1
+                
             }else{
                 self.seekSlider.alpha = 0
                 self.pauseButton.alpha = 0
                 self.closeButton.alpha = 0
                 self.timeRemainingLabel.alpha = 0
                 self.timePlayedLabel.alpha = 0
-                self.startLoopButton.alpha = 0
+         
                 self.nextLoopButton.alpha = 0
                 self.loopBar.alpha = 0
                 for button in self.loopButtons{
@@ -291,7 +257,7 @@ class VideoPlayerViewController: UIViewController {
                         button.alpha = 0
                     })
                 }
-                self.loopTracker.alpha = 0
+    
             }
         })
         componentsHidden = !componentsHidden
@@ -361,11 +327,11 @@ class VideoPlayerViewController: UIViewController {
                     seekToPercent(percent: mainLoop.start)
                     updateTimeLabel(elapsedTime: elapsedTime, duration: duration)
                     updateSlider(elapsedTime: elapsedTime, duration: duration)
-                    updateLoopTracker(elapsedTime: elapsedTime, duration: duration)
+                 
                 }else{
                     updateTimeLabel(elapsedTime: elapsedTime, duration: duration)
                     updateSlider(elapsedTime: elapsedTime, duration: duration)
-                    updateLoopTracker(elapsedTime: elapsedTime, duration: duration)
+             
                 }
                 
             }
@@ -383,11 +349,21 @@ class VideoPlayerViewController: UIViewController {
         let elapsedTime: Float64 = videoDuration * Float64(seekSlider.value)
         updateTimeLabel(elapsedTime: elapsedTime, duration: videoDuration)
         
-        avPlayer.seek(to: CMTimeMakeWithSeconds(elapsedTime, 100)) { (completed: Bool) -> Void in
-            if self.playerRateBeforeSeek > 0 {
-                self.avPlayer.play()
+        let inLoop = isInLoop(value: Float64(slider.value))
+        
+        switch (inLoop) {
+        case -1:
+            avPlayer.seek(to: CMTimeMakeWithSeconds(elapsedTime, 100)) { (completed: Bool) -> Void in
+                if self.playerRateBeforeSeek > 0 {
+                    self.avPlayer.play()
+                }
             }
+        default:
+            skipToLoop(id: inLoop)
+            
         }
+        
+        
     }
     
     func seekToPercent(percent: Float64){
@@ -412,6 +388,23 @@ class VideoPlayerViewController: UIViewController {
         avPlayer.pause()
         avPlayerLayer.removeFromSuperlayer()
         dismiss(animated: true, completion: nil)
+    }
+    
+    func isInLoop(value: Float64) -> Int{
+        var i = 0
+        for loop in loops{
+            if loop != mainLoop{
+                if loop.start < value && loop.end > value{
+                    return i
+                }
+            }
+            i += 1
+        }
+        if mainLoop.start > value{
+            return loopIndex
+        }
+        
+        return -1
     }
 
 
